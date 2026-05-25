@@ -5,6 +5,2189 @@
     "version": "0.1.0",
     "description": "Minimal HTTP wrapper around Claude Code using the stable Claude Agent SDK."
   },
+  "components": {
+    "responses": {
+      "NotFound": {
+        "description": "Session not found",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      "Conflict": {
+        "description": "Session has no active run (start a prompt first)",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "Health": {
+        "type": "object",
+        "properties": {
+          "healthy": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          },
+          "service": {
+            "type": "string"
+          },
+          "host": {
+            "type": "string"
+          },
+          "port": {
+            "type": "integer"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "healthy",
+          "service",
+          "host",
+          "port",
+          "timestamp"
+        ]
+      },
+      "Runtime": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "sessionId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "running",
+              "stopping"
+            ]
+          },
+          "startedAt": {
+            "type": "integer"
+          }
+        }
+      },
+      "Session": {
+        "type": "object",
+        "properties": {
+          "sessionId": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "lastModified": {
+            "type": "integer"
+          },
+          "fileSize": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "customTitle": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "firstPrompt": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "gitBranch": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "cwd": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "tag": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "createdAt": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "sessionId",
+          "summary",
+          "lastModified",
+          "fileSize",
+          "customTitle",
+          "firstPrompt",
+          "gitBranch",
+          "cwd",
+          "tag",
+          "createdAt"
+        ]
+      },
+      "SessionWithRuntime": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Session"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "runtime": {
+                "$ref": "#/components/schemas/Runtime"
+              }
+            },
+            "required": [
+              "runtime"
+            ]
+          }
+        ]
+      },
+      "SessionMessage": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "user",
+              "assistant",
+              "system"
+            ]
+          },
+          "uuid": {
+            "type": "string"
+          },
+          "sessionId": {
+            "type": "string"
+          },
+          "message": {},
+          "parentToolUseId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "type",
+          "uuid",
+          "sessionId",
+          "parentToolUseId"
+        ]
+      },
+      "AnthropicContentBlock": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "text"
+                ]
+              },
+              "text": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "type",
+              "text"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "tool_use"
+                ]
+              },
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "input": {
+                "type": "object",
+                "additionalProperties": {}
+              }
+            },
+            "required": [
+              "type",
+              "id",
+              "name",
+              "input"
+            ]
+          }
+        ]
+      },
+      "SseSessionInitEvent": {
+        "type": "object",
+        "properties": {
+          "event": {
+            "type": "string",
+            "enum": [
+              "session.init"
+            ]
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "sessionId": {
+                "type": "string"
+              },
+              "uuid": {
+                "type": "string"
+              },
+              "cwd": {
+                "type": "string"
+              },
+              "model": {
+                "type": "string"
+              },
+              "tools": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "permissionMode": {
+                "type": "string"
+              },
+              "slashCommands": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "skills": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "mcpServers": {
+                "type": "array",
+                "items": {}
+              },
+              "claudeCodeVersion": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "sessionId",
+              "uuid",
+              "cwd",
+              "model",
+              "tools",
+              "permissionMode",
+              "slashCommands",
+              "skills",
+              "mcpServers",
+              "claudeCodeVersion"
+            ]
+          }
+        },
+        "required": [
+          "event",
+          "data"
+        ]
+      },
+      "SseSessionStatusEvent": {
+        "type": "object",
+        "properties": {
+          "event": {
+            "type": "string",
+            "enum": [
+              "session.status"
+            ]
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "sessionId": {
+                "type": "string"
+              },
+              "uuid": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string"
+              },
+              "permissionMode": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "compactResult": {},
+              "compactError": {}
+            },
+            "required": [
+              "sessionId",
+              "uuid",
+              "status",
+              "permissionMode"
+            ]
+          }
+        },
+        "required": [
+          "event",
+          "data"
+        ]
+      },
+      "SsePermissionRequestedEvent": {
+        "type": "object",
+        "properties": {
+          "event": {
+            "type": "string",
+            "enum": [
+              "permission.requested"
+            ]
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "sessionId": {
+                "type": "string"
+              },
+              "toolName": {
+                "type": "string",
+                "description": "Name of the tool requesting permission (e.g. Bash, Write, Edit)"
+              },
+              "toolInput": {
+                "type": "object",
+                "additionalProperties": {},
+                "description": "Parameters the tool would be called with"
+              },
+              "toolUseId": {
+                "type": "string",
+                "description": "Unique identifier for this tool call within the assistant message"
+              },
+              "blockedPath": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "File path that triggered the permission check, if applicable"
+              },
+              "decisionReason": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Explanation of why this permission check was triggered"
+              }
+            },
+            "required": [
+              "sessionId",
+              "toolName",
+              "toolInput",
+              "toolUseId",
+              "blockedPath",
+              "decisionReason"
+            ]
+          }
+        },
+        "required": [
+          "event",
+          "data"
+        ],
+        "description": "Emitted when the agent needs user approval to use a tool. The SSE stream pauses until POST /sessions/{sessionId}/permissions/respond is called."
+      },
+      "SseQuestionAskedEvent": {
+        "type": "object",
+        "properties": {
+          "event": {
+            "type": "string",
+            "enum": [
+              "question.asked"
+            ]
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "sessionId": {
+                "type": "string"
+              },
+              "questions": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "question": {
+                      "type": "string",
+                      "description": "Full question text to display"
+                    },
+                    "header": {
+                      "type": "string",
+                      "description": "Short label (max 12 chars)"
+                    },
+                    "options": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "label": {
+                            "type": "string"
+                          },
+                          "description": {
+                            "type": "string"
+                          },
+                          "preview": {
+                            "type": "string",
+                            "description": "Optional HTML/markdown preview (only present when toolConfig.askUserQuestion.previewFormat is set)"
+                          }
+                        },
+                        "required": [
+                          "label",
+                          "description"
+                        ]
+                      }
+                    },
+                    "multiSelect": {
+                      "type": "boolean",
+                      "description": "Whether multiple options can be selected"
+                    }
+                  },
+                  "required": [
+                    "question",
+                    "header",
+                    "options",
+                    "multiSelect"
+                  ]
+                },
+                "description": "Questions Claude is asking. Each item has question, header, options (label+description), and multiSelect."
+              }
+            },
+            "required": [
+              "sessionId",
+              "questions"
+            ]
+          }
+        },
+        "required": [
+          "event",
+          "data"
+        ],
+        "description": "Emitted when Claude calls AskUserQuestion. The SSE stream pauses until POST /sessions/{sessionId}/questions/respond is called with the user answers."
+      },
+      "SseMessageAssistantEvent": {
+        "type": "object",
+        "properties": {
+          "event": {
+            "type": "string",
+            "enum": [
+              "message.assistant"
+            ]
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "sessionId": {
+                "type": "string"
+              },
+              "uuid": {
+                "type": "string"
+              },
+              "text": {
+                "type": "string",
+                "description": "Concatenated text from all text content blocks"
+              },
+              "message": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "message"
+                    ]
+                  },
+                  "role": {
+                    "type": "string",
+                    "enum": [
+                      "assistant"
+                    ]
+                  },
+                  "model": {
+                    "type": "string"
+                  },
+                  "content": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/AnthropicContentBlock"
+                    }
+                  },
+                  "stop_reason": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "stop_sequence": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "usage": {
+                    "type": "object",
+                    "properties": {
+                      "input_tokens": {
+                        "type": "integer"
+                      },
+                      "output_tokens": {
+                        "type": "integer"
+                      },
+                      "cache_creation_input_tokens": {
+                        "type": "integer"
+                      },
+                      "cache_read_input_tokens": {
+                        "type": "integer"
+                      }
+                    }
+                  }
+                },
+                "required": [
+                  "id",
+                  "type",
+                  "role",
+                  "model",
+                  "content"
+                ],
+                "description": "Full Anthropic API message object"
+              },
+              "parentToolUseId": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Set when this message is a sub-agent response triggered by a tool_use block"
+              },
+              "error": {}
+            },
+            "required": [
+              "sessionId",
+              "uuid",
+              "text",
+              "message",
+              "parentToolUseId"
+            ]
+          }
+        },
+        "required": [
+          "event",
+          "data"
+        ]
+      },
+      "SseMessageDeltaEvent": {
+        "type": "object",
+        "properties": {
+          "event": {
+            "type": "string",
+            "enum": [
+              "message.delta"
+            ]
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "sessionId": {
+                "type": "string"
+              },
+              "uuid": {
+                "type": "string"
+              },
+              "event": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string"
+                  },
+                  "index": {
+                    "type": "integer"
+                  },
+                  "delta": {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "enum": [
+                          "text_delta",
+                          "input_json_delta"
+                        ]
+                      },
+                      "text": {
+                        "type": "string",
+                        "description": "Present when delta.type is text_delta"
+                      },
+                      "partial_json": {
+                        "type": "string",
+                        "description": "Present when delta.type is input_json_delta"
+                      }
+                    }
+                  }
+                },
+                "required": [
+                  "type"
+                ],
+                "description": "Raw Anthropic stream event (content_block_start, content_block_delta, content_block_stop, message_delta, message_start, message_stop)"
+              },
+              "parentToolUseId": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "ttftMs": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "description": "Time to first token in milliseconds"
+              }
+            },
+            "required": [
+              "sessionId",
+              "uuid",
+              "event",
+              "parentToolUseId",
+              "ttftMs"
+            ]
+          }
+        },
+        "required": [
+          "event",
+          "data"
+        ],
+        "description": "Streaming delta — only emitted when includePartialMessages is true"
+      },
+      "SseResultEvent": {
+        "type": "object",
+        "properties": {
+          "event": {
+            "type": "string",
+            "enum": [
+              "result"
+            ]
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "sessionId": {
+                "type": "string"
+              },
+              "uuid": {
+                "type": "string"
+              },
+              "subtype": {
+                "type": "string",
+                "enum": [
+                  "success",
+                  "error_max_turns",
+                  "error_during_execution"
+                ]
+              },
+              "isError": {
+                "type": "boolean"
+              },
+              "result": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Final result text; populated when subtype is success"
+              },
+              "errors": {
+                "type": [
+                  "array",
+                  "null"
+                ],
+                "items": {},
+                "description": "Error objects; populated when subtype is not success"
+              },
+              "stopReason": {
+                "type": "string"
+              },
+              "terminalReason": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "durationMs": {
+                "type": "integer"
+              },
+              "durationApiMs": {
+                "type": "integer"
+              },
+              "numTurns": {
+                "type": "integer"
+              },
+              "totalCostUsd": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "sessionId",
+              "uuid",
+              "subtype",
+              "isError",
+              "result",
+              "errors",
+              "stopReason",
+              "terminalReason",
+              "durationMs",
+              "durationApiMs",
+              "numTurns",
+              "totalCostUsd"
+            ]
+          }
+        },
+        "required": [
+          "event",
+          "data"
+        ]
+      },
+      "SseTaskStartedEvent": {
+        "type": "object",
+        "properties": {
+          "event": {
+            "type": "string",
+            "enum": [
+              "task.started"
+            ]
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "sessionId": {
+                "type": "string"
+              },
+              "uuid": {
+                "type": "string"
+              },
+              "taskId": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "taskType": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "toolUseId": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "sessionId",
+              "uuid",
+              "taskId",
+              "description",
+              "taskType",
+              "toolUseId"
+            ]
+          }
+        },
+        "required": [
+          "event",
+          "data"
+        ]
+      },
+      "SseTaskProgressEvent": {
+        "type": "object",
+        "properties": {
+          "event": {
+            "type": "string",
+            "enum": [
+              "task.progress"
+            ]
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "sessionId": {
+                "type": "string"
+              },
+              "uuid": {
+                "type": "string"
+              },
+              "taskId": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "toolUseId": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "usage": {
+                "type": "object",
+                "additionalProperties": {}
+              },
+              "lastToolName": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "summary": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "sessionId",
+              "uuid",
+              "taskId",
+              "description",
+              "toolUseId",
+              "usage",
+              "lastToolName",
+              "summary"
+            ]
+          }
+        },
+        "required": [
+          "event",
+          "data"
+        ]
+      },
+      "SseTaskNotificationEvent": {
+        "type": "object",
+        "properties": {
+          "event": {
+            "type": "string",
+            "enum": [
+              "task.notification"
+            ]
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "sessionId": {
+                "type": "string"
+              },
+              "uuid": {
+                "type": "string"
+              },
+              "taskId": {
+                "type": "string"
+              },
+              "toolUseId": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "status": {
+                "type": "string"
+              },
+              "outputFile": {},
+              "summary": {
+                "type": "string"
+              },
+              "usage": {}
+            },
+            "required": [
+              "sessionId",
+              "uuid",
+              "taskId",
+              "toolUseId",
+              "status",
+              "summary"
+            ]
+          }
+        },
+        "required": [
+          "event",
+          "data"
+        ]
+      },
+      "SseSessionCompletedEvent": {
+        "type": "object",
+        "properties": {
+          "event": {
+            "type": "string",
+            "enum": [
+              "session.completed"
+            ]
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "sessionId": {
+                "type": "string"
+              },
+              "subtype": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "sessionId",
+              "subtype"
+            ]
+          }
+        },
+        "required": [
+          "event",
+          "data"
+        ]
+      },
+      "SseErrorEvent": {
+        "type": "object",
+        "properties": {
+          "event": {
+            "type": "string",
+            "enum": [
+              "error"
+            ]
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "message": {
+                "type": "string"
+              },
+              "code": {
+                "type": "integer",
+                "description": "HTTP status code, default 500"
+              }
+            },
+            "required": [
+              "message",
+              "code"
+            ]
+          }
+        },
+        "required": [
+          "event",
+          "data"
+        ]
+      },
+      "SseMessageRawEvent": {
+        "type": "object",
+        "properties": {
+          "event": {
+            "type": "string",
+            "enum": [
+              "message.raw"
+            ]
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "sessionId": {
+                "type": "string"
+              },
+              "uuid": {
+                "type": "string"
+              },
+              "message": {
+                "description": "Raw unrecognized SDK message object"
+              }
+            },
+            "required": [
+              "sessionId",
+              "uuid"
+            ]
+          }
+        },
+        "required": [
+          "event",
+          "data"
+        ],
+        "description": "Catch-all for unrecognized SDK message types"
+      },
+      "SseEvent": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/SseSessionInitEvent"
+          },
+          {
+            "$ref": "#/components/schemas/SseSessionStatusEvent"
+          },
+          {
+            "$ref": "#/components/schemas/SsePermissionRequestedEvent"
+          },
+          {
+            "$ref": "#/components/schemas/SseQuestionAskedEvent"
+          },
+          {
+            "$ref": "#/components/schemas/SseMessageAssistantEvent"
+          },
+          {
+            "$ref": "#/components/schemas/SseMessageDeltaEvent"
+          },
+          {
+            "$ref": "#/components/schemas/SseResultEvent"
+          },
+          {
+            "$ref": "#/components/schemas/SseTaskStartedEvent"
+          },
+          {
+            "$ref": "#/components/schemas/SseTaskProgressEvent"
+          },
+          {
+            "$ref": "#/components/schemas/SseTaskNotificationEvent"
+          },
+          {
+            "$ref": "#/components/schemas/SseSessionCompletedEvent"
+          },
+          {
+            "$ref": "#/components/schemas/SseErrorEvent"
+          },
+          {
+            "$ref": "#/components/schemas/SseMessageRawEvent"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "event",
+          "mapping": {
+            "session.init": "#/components/schemas/SseSessionInitEvent",
+            "session.status": "#/components/schemas/SseSessionStatusEvent",
+            "permission.requested": "#/components/schemas/SsePermissionRequestedEvent",
+            "question.asked": "#/components/schemas/SseQuestionAskedEvent",
+            "message.assistant": "#/components/schemas/SseMessageAssistantEvent",
+            "message.delta": "#/components/schemas/SseMessageDeltaEvent",
+            "result": "#/components/schemas/SseResultEvent",
+            "task.started": "#/components/schemas/SseTaskStartedEvent",
+            "task.progress": "#/components/schemas/SseTaskProgressEvent",
+            "task.notification": "#/components/schemas/SseTaskNotificationEvent",
+            "session.completed": "#/components/schemas/SseSessionCompletedEvent",
+            "error": "#/components/schemas/SseErrorEvent",
+            "message.raw": "#/components/schemas/SseMessageRawEvent"
+          }
+        }
+      },
+      "StreamedMessageResponse": {
+        "type": "object",
+        "properties": {
+          "streamed": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          },
+          "sessionId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "streamed",
+          "sessionId"
+        ],
+        "description": "Returned when a message is injected into an active streaming session via streamInput. The agent response flows through the original SSE stream."
+      },
+      "PromptRunResponse": {
+        "type": "object",
+        "properties": {
+          "sessionId": {
+            "type": "string"
+          },
+          "result": {},
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SseEvent"
+            }
+          }
+        },
+        "required": [
+          "sessionId",
+          "events"
+        ]
+      },
+      "RewindResult": {
+        "type": "object",
+        "properties": {
+          "canRewind": {
+            "type": "boolean"
+          },
+          "filesChanged": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "insertions": {
+            "type": "integer"
+          },
+          "deletions": {
+            "type": "integer"
+          },
+          "error": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "canRewind"
+        ]
+      },
+      "SlashCommand": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "argumentHint": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "description",
+          "argumentHint"
+        ]
+      },
+      "ModelInfo": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "supportsEffort": {
+            "type": "boolean"
+          },
+          "supportedEffortLevels": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "low",
+                "medium",
+                "high",
+                "xhigh",
+                "max"
+              ]
+            }
+          }
+        },
+        "required": [
+          "value",
+          "displayName",
+          "description"
+        ]
+      },
+      "AgentInfo": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "ContextUsageCategory": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "tokens": {
+            "type": "integer"
+          },
+          "color": {
+            "type": "string"
+          },
+          "isDeferred": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "name",
+          "tokens",
+          "color"
+        ]
+      },
+      "ContextUsage": {
+        "type": "object",
+        "properties": {
+          "categories": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ContextUsageCategory"
+            }
+          },
+          "totalTokens": {
+            "type": "integer"
+          },
+          "maxTokens": {
+            "type": "integer"
+          },
+          "rawMaxTokens": {
+            "type": "integer"
+          },
+          "percentage": {
+            "type": "number"
+          },
+          "model": {
+            "type": "string"
+          },
+          "memoryFiles": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string"
+                },
+                "tokens": {
+                  "type": "integer"
+                }
+              }
+            }
+          }
+        },
+        "required": [
+          "categories",
+          "totalTokens",
+          "maxTokens",
+          "percentage",
+          "model"
+        ]
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "message": {
+                "type": "string"
+              },
+              "details": {}
+            },
+            "required": [
+              "message"
+            ]
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "TextBlockParam": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "text"
+            ]
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "type",
+          "text"
+        ]
+      },
+      "ImageBlockParam": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "image"
+            ]
+          },
+          "source": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "base64"
+                    ]
+                  },
+                  "media_type": {
+                    "type": "string",
+                    "enum": [
+                      "image/jpeg",
+                      "image/png",
+                      "image/gif",
+                      "image/webp"
+                    ]
+                  },
+                  "data": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "type",
+                  "media_type",
+                  "data"
+                ]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "url"
+                    ]
+                  },
+                  "url": {
+                    "type": "string",
+                    "format": "uri"
+                  }
+                },
+                "required": [
+                  "type",
+                  "url"
+                ]
+              }
+            ]
+          }
+        },
+        "required": [
+          "type",
+          "source"
+        ]
+      },
+      "ContentBlockParam": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "text"
+                ]
+              },
+              "text": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "type",
+              "text"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "image"
+                ]
+              },
+              "source": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "enum": [
+                          "base64"
+                        ]
+                      },
+                      "media_type": {
+                        "type": "string",
+                        "enum": [
+                          "image/jpeg",
+                          "image/png",
+                          "image/gif",
+                          "image/webp"
+                        ]
+                      },
+                      "data": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "media_type",
+                      "data"
+                    ]
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "enum": [
+                          "url"
+                        ]
+                      },
+                      "url": {
+                        "type": "string",
+                        "format": "uri"
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "url"
+                    ]
+                  }
+                ]
+              }
+            },
+            "required": [
+              "type",
+              "source"
+            ]
+          }
+        ]
+      },
+      "PromptContent": {
+        "anyOf": [
+          {
+            "type": "string",
+            "minLength": 1
+          },
+          {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "text"
+                      ]
+                    },
+                    "text": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "text"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "image"
+                      ]
+                    },
+                    "source": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "enum": [
+                                "base64"
+                              ]
+                            },
+                            "media_type": {
+                              "type": "string",
+                              "enum": [
+                                "image/jpeg",
+                                "image/png",
+                                "image/gif",
+                                "image/webp"
+                              ]
+                            },
+                            "data": {
+                              "type": "string",
+                              "minLength": 1
+                            }
+                          },
+                          "required": [
+                            "type",
+                            "media_type",
+                            "data"
+                          ]
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "enum": [
+                                "url"
+                              ]
+                            },
+                            "url": {
+                              "type": "string",
+                              "format": "uri"
+                            }
+                          },
+                          "required": [
+                            "type",
+                            "url"
+                          ]
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "source"
+                  ]
+                }
+              ]
+            },
+            "minItems": 1
+          }
+        ]
+      },
+      "QueryOptions": {
+        "type": "object",
+        "properties": {
+          "cwd": {
+            "type": "string"
+          },
+          "model": {
+            "type": "string"
+          },
+          "permissionMode": {
+            "type": "string",
+            "enum": [
+              "default",
+              "acceptEdits",
+              "bypassPermissions",
+              "plan",
+              "dontAsk",
+              "auto"
+            ]
+          },
+          "settingSources": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "user",
+                "project",
+                "local"
+              ]
+            }
+          },
+          "systemPrompt": {
+            "type": "string"
+          },
+          "appendSystemPrompt": {
+            "type": "string"
+          },
+          "allowedTools": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "disallowedTools": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "additionalDirectories": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "tools": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "preset"
+                    ]
+                  },
+                  "preset": {
+                    "type": "string",
+                    "enum": [
+                      "claude_code"
+                    ]
+                  }
+                },
+                "required": [
+                  "type",
+                  "preset"
+                ]
+              }
+            ]
+          },
+          "maxTurns": {
+            "type": "integer",
+            "exclusiveMinimum": 0
+          },
+          "enableFileCheckpointing": {
+            "type": "boolean"
+          }
+        }
+      },
+      "CreateSessionRequest": {
+        "type": "object",
+        "properties": {
+          "prompt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "array",
+                "items": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "enum": [
+                            "text"
+                          ]
+                        },
+                        "text": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "text"
+                      ]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "enum": [
+                            "image"
+                          ]
+                        },
+                        "source": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "type": {
+                                  "type": "string",
+                                  "enum": [
+                                    "base64"
+                                  ]
+                                },
+                                "media_type": {
+                                  "type": "string",
+                                  "enum": [
+                                    "image/jpeg",
+                                    "image/png",
+                                    "image/gif",
+                                    "image/webp"
+                                  ]
+                                },
+                                "data": {
+                                  "type": "string",
+                                  "minLength": 1
+                                }
+                              },
+                              "required": [
+                                "type",
+                                "media_type",
+                                "data"
+                              ]
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "type": {
+                                  "type": "string",
+                                  "enum": [
+                                    "url"
+                                  ]
+                                },
+                                "url": {
+                                  "type": "string",
+                                  "format": "uri"
+                                }
+                              },
+                              "required": [
+                                "type",
+                                "url"
+                              ]
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "source"
+                      ]
+                    }
+                  ]
+                },
+                "minItems": 1
+              }
+            ]
+          },
+          "stream": {
+            "type": "boolean"
+          },
+          "includePartialMessages": {
+            "type": "boolean"
+          },
+          "options": {
+            "type": "object",
+            "properties": {
+              "cwd": {
+                "type": "string"
+              },
+              "model": {
+                "type": "string"
+              },
+              "permissionMode": {
+                "type": "string",
+                "enum": [
+                  "default",
+                  "acceptEdits",
+                  "bypassPermissions",
+                  "plan",
+                  "dontAsk",
+                  "auto"
+                ]
+              },
+              "settingSources": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "user",
+                    "project",
+                    "local"
+                  ]
+                }
+              },
+              "systemPrompt": {
+                "type": "string"
+              },
+              "appendSystemPrompt": {
+                "type": "string"
+              },
+              "allowedTools": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "disallowedTools": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "additionalDirectories": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "tools": {
+                "anyOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "enum": [
+                          "preset"
+                        ]
+                      },
+                      "preset": {
+                        "type": "string",
+                        "enum": [
+                          "claude_code"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "preset"
+                    ]
+                  }
+                ]
+              },
+              "maxTurns": {
+                "type": "integer",
+                "exclusiveMinimum": 0
+              },
+              "enableFileCheckpointing": {
+                "type": "boolean"
+              }
+            }
+          }
+        },
+        "required": [
+          "prompt"
+        ]
+      },
+      "SendMessageRequest": {
+        "type": "object",
+        "properties": {
+          "prompt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "array",
+                "items": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "enum": [
+                            "text"
+                          ]
+                        },
+                        "text": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "text"
+                      ]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "enum": [
+                            "image"
+                          ]
+                        },
+                        "source": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "type": {
+                                  "type": "string",
+                                  "enum": [
+                                    "base64"
+                                  ]
+                                },
+                                "media_type": {
+                                  "type": "string",
+                                  "enum": [
+                                    "image/jpeg",
+                                    "image/png",
+                                    "image/gif",
+                                    "image/webp"
+                                  ]
+                                },
+                                "data": {
+                                  "type": "string",
+                                  "minLength": 1
+                                }
+                              },
+                              "required": [
+                                "type",
+                                "media_type",
+                                "data"
+                              ]
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "type": {
+                                  "type": "string",
+                                  "enum": [
+                                    "url"
+                                  ]
+                                },
+                                "url": {
+                                  "type": "string",
+                                  "format": "uri"
+                                }
+                              },
+                              "required": [
+                                "type",
+                                "url"
+                              ]
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "source"
+                      ]
+                    }
+                  ]
+                },
+                "minItems": 1
+              }
+            ]
+          },
+          "stream": {
+            "type": "boolean"
+          },
+          "includePartialMessages": {
+            "type": "boolean"
+          },
+          "options": {
+            "type": "object",
+            "properties": {
+              "cwd": {
+                "type": "string"
+              },
+              "model": {
+                "type": "string"
+              },
+              "permissionMode": {
+                "type": "string",
+                "enum": [
+                  "default",
+                  "acceptEdits",
+                  "bypassPermissions",
+                  "plan",
+                  "dontAsk",
+                  "auto"
+                ]
+              },
+              "settingSources": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "user",
+                    "project",
+                    "local"
+                  ]
+                }
+              },
+              "systemPrompt": {
+                "type": "string"
+              },
+              "appendSystemPrompt": {
+                "type": "string"
+              },
+              "allowedTools": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "disallowedTools": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "additionalDirectories": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "tools": {
+                "anyOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "enum": [
+                          "preset"
+                        ]
+                      },
+                      "preset": {
+                        "type": "string",
+                        "enum": [
+                          "claude_code"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "preset"
+                    ]
+                  }
+                ]
+              },
+              "maxTurns": {
+                "type": "integer",
+                "exclusiveMinimum": 0
+              },
+              "enableFileCheckpointing": {
+                "type": "boolean"
+              }
+            }
+          },
+          "forkSession": {
+            "type": "boolean"
+          },
+          "priority": {
+            "type": "string",
+            "enum": [
+              "now",
+              "next",
+              "later"
+            ]
+          }
+        },
+        "required": [
+          "prompt"
+        ]
+      },
+      "UpdateSessionRequest": {
+        "type": "object",
+        "properties": {
+          "dir": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "tag": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1
+          }
+        }
+      },
+      "ForkSessionRequest": {
+        "type": "object",
+        "properties": {
+          "dir": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "upToMessageId": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "RewindRequest": {
+        "type": "object",
+        "properties": {
+          "userMessageId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "dryRun": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "userMessageId"
+        ]
+      }
+    },
+    "parameters": {}
+  },
   "paths": {
     "/health": {
       "get": {
@@ -30,24 +2213,38 @@
         "summary": "List Claude sessions",
         "parameters": [
           {
-            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
             "name": "dir",
-            "schema": { "type": "string" }
+            "in": "query"
           },
           {
-            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "required": false,
             "name": "limit",
-            "schema": { "type": "integer", "minimum": 1 }
+            "in": "query"
           },
           {
-            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "required": false,
             "name": "offset",
-            "schema": { "type": "integer", "minimum": 0 }
+            "in": "query"
           },
           {
-            "in": "query",
+            "schema": {
+              "type": "boolean"
+            },
+            "required": false,
             "name": "includeWorktrees",
-            "schema": { "type": "boolean" }
+            "in": "query"
           }
         ],
         "responses": {
@@ -60,10 +2257,14 @@
                   "properties": {
                     "sessions": {
                       "type": "array",
-                      "items": { "$ref": "#/components/schemas/Session" }
+                      "items": {
+                        "$ref": "#/components/schemas/Session"
+                      }
                     }
                   },
-                  "required": ["sessions"]
+                  "required": [
+                    "sessions"
+                  ]
                 }
               }
             }
@@ -77,24 +2278,238 @@
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/CreateSessionRequest" }
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "prompt": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      {
+                        "type": "array",
+                        "items": {
+                          "oneOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "type": {
+                                  "type": "string",
+                                  "enum": [
+                                    "text"
+                                  ]
+                                },
+                                "text": {
+                                  "type": "string",
+                                  "minLength": 1
+                                }
+                              },
+                              "required": [
+                                "type",
+                                "text"
+                              ]
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "type": {
+                                  "type": "string",
+                                  "enum": [
+                                    "image"
+                                  ]
+                                },
+                                "source": {
+                                  "anyOf": [
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "type": {
+                                          "type": "string",
+                                          "enum": [
+                                            "base64"
+                                          ]
+                                        },
+                                        "media_type": {
+                                          "type": "string",
+                                          "enum": [
+                                            "image/jpeg",
+                                            "image/png",
+                                            "image/gif",
+                                            "image/webp"
+                                          ]
+                                        },
+                                        "data": {
+                                          "type": "string",
+                                          "minLength": 1
+                                        }
+                                      },
+                                      "required": [
+                                        "type",
+                                        "media_type",
+                                        "data"
+                                      ]
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "type": {
+                                          "type": "string",
+                                          "enum": [
+                                            "url"
+                                          ]
+                                        },
+                                        "url": {
+                                          "type": "string",
+                                          "format": "uri"
+                                        }
+                                      },
+                                      "required": [
+                                        "type",
+                                        "url"
+                                      ]
+                                    }
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "type",
+                                "source"
+                              ]
+                            }
+                          ]
+                        },
+                        "minItems": 1
+                      }
+                    ]
+                  },
+                  "stream": {
+                    "type": "boolean"
+                  },
+                  "includePartialMessages": {
+                    "type": "boolean"
+                  },
+                  "options": {
+                    "type": "object",
+                    "properties": {
+                      "cwd": {
+                        "type": "string"
+                      },
+                      "model": {
+                        "type": "string"
+                      },
+                      "permissionMode": {
+                        "type": "string",
+                        "enum": [
+                          "default",
+                          "acceptEdits",
+                          "bypassPermissions",
+                          "plan",
+                          "dontAsk",
+                          "auto"
+                        ]
+                      },
+                      "settingSources": {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "enum": [
+                            "user",
+                            "project",
+                            "local"
+                          ]
+                        }
+                      },
+                      "systemPrompt": {
+                        "type": "string"
+                      },
+                      "appendSystemPrompt": {
+                        "type": "string"
+                      },
+                      "allowedTools": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "disallowedTools": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalDirectories": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "tools": {
+                        "anyOf": [
+                          {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "enum": [
+                                  "preset"
+                                ]
+                              },
+                              "preset": {
+                                "type": "string",
+                                "enum": [
+                                  "claude_code"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "type",
+                              "preset"
+                            ]
+                          }
+                        ]
+                      },
+                      "maxTurns": {
+                        "type": "integer",
+                        "exclusiveMinimum": 0
+                      },
+                      "enableFileCheckpointing": {
+                        "type": "boolean"
+                      }
+                    }
+                  }
+                },
+                "required": [
+                  "prompt"
+                ]
+              }
             }
           }
         },
         "responses": {
-          "201": {
-            "description": "Created session and completed first run",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/PromptRunResponse" }
-              }
-            }
-          },
           "200": {
             "description": "SSE stream for first run",
             "content": {
               "text/event-stream": {
-                "schema": { "$ref": "#/components/schemas/SseEvent" }
+                "schema": {
+                  "$ref": "#/components/schemas/SseEvent"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Created session and completed first run",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PromptRunResponse"
+                }
               }
             }
           }
@@ -107,15 +2522,20 @@
         "summary": "Get session metadata",
         "parameters": [
           {
-            "in": "path",
-            "name": "sessionId",
+            "schema": {
+              "type": "string"
+            },
             "required": true,
-            "schema": { "type": "string" }
+            "name": "sessionId",
+            "in": "path"
           },
           {
-            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
             "name": "dir",
-            "schema": { "type": "string" }
+            "in": "query"
           }
         ],
         "responses": {
@@ -126,9 +2546,13 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "session": { "$ref": "#/components/schemas/SessionWithRuntime" }
+                    "session": {
+                      "$ref": "#/components/schemas/SessionWithRuntime"
+                    }
                   },
-                  "required": ["session"]
+                  "required": [
+                    "session"
+                  ]
                 }
               }
             }
@@ -140,17 +2564,37 @@
         "summary": "Rename or tag a session",
         "parameters": [
           {
-            "in": "path",
-            "name": "sessionId",
+            "schema": {
+              "type": "string"
+            },
             "required": true,
-            "schema": { "type": "string" }
+            "name": "sessionId",
+            "in": "path"
           }
         ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/UpdateSessionRequest" }
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "dir": {
+                    "type": "string"
+                  },
+                  "title": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "tag": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "minLength": 1
+                  }
+                }
+              }
             }
           }
         },
@@ -162,9 +2606,13 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "session": { "$ref": "#/components/schemas/SessionWithRuntime" }
+                    "session": {
+                      "$ref": "#/components/schemas/SessionWithRuntime"
+                    }
                   },
-                  "required": ["session"]
+                  "required": [
+                    "session"
+                  ]
                 }
               }
             }
@@ -178,30 +2626,46 @@
         "summary": "Get session messages",
         "parameters": [
           {
-            "in": "path",
-            "name": "sessionId",
+            "schema": {
+              "type": "string"
+            },
             "required": true,
-            "schema": { "type": "string" }
+            "name": "sessionId",
+            "in": "path"
           },
           {
-            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
             "name": "dir",
-            "schema": { "type": "string" }
+            "in": "query"
           },
           {
-            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "required": false,
             "name": "limit",
-            "schema": { "type": "integer", "minimum": 1 }
+            "in": "query"
           },
           {
-            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "required": false,
             "name": "offset",
-            "schema": { "type": "integer", "minimum": 0 }
+            "in": "query"
           },
           {
-            "in": "query",
+            "schema": {
+              "type": "boolean"
+            },
+            "required": false,
             "name": "includeSystemMessages",
-            "schema": { "type": "boolean" }
+            "in": "query"
           }
         ],
         "responses": {
@@ -214,10 +2678,14 @@
                   "properties": {
                     "messages": {
                       "type": "array",
-                      "items": { "$ref": "#/components/schemas/SessionMessage" }
+                      "items": {
+                        "$ref": "#/components/schemas/SessionMessage"
+                      }
                     }
                   },
-                  "required": ["messages"]
+                  "required": [
+                    "messages"
+                  ]
                 }
               }
             }
@@ -230,17 +2698,240 @@
         "description": "When the session is idle, starts a new query turn (batch or SSE). When the session has an active run, injects the message via streamInput and returns 202 — the agent's response events flow through the original SSE stream.",
         "parameters": [
           {
-            "in": "path",
-            "name": "sessionId",
+            "schema": {
+              "type": "string"
+            },
             "required": true,
-            "schema": { "type": "string" }
+            "name": "sessionId",
+            "in": "path"
           }
         ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/SendMessageRequest" }
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "prompt": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      {
+                        "type": "array",
+                        "items": {
+                          "oneOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "type": {
+                                  "type": "string",
+                                  "enum": [
+                                    "text"
+                                  ]
+                                },
+                                "text": {
+                                  "type": "string",
+                                  "minLength": 1
+                                }
+                              },
+                              "required": [
+                                "type",
+                                "text"
+                              ]
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "type": {
+                                  "type": "string",
+                                  "enum": [
+                                    "image"
+                                  ]
+                                },
+                                "source": {
+                                  "anyOf": [
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "type": {
+                                          "type": "string",
+                                          "enum": [
+                                            "base64"
+                                          ]
+                                        },
+                                        "media_type": {
+                                          "type": "string",
+                                          "enum": [
+                                            "image/jpeg",
+                                            "image/png",
+                                            "image/gif",
+                                            "image/webp"
+                                          ]
+                                        },
+                                        "data": {
+                                          "type": "string",
+                                          "minLength": 1
+                                        }
+                                      },
+                                      "required": [
+                                        "type",
+                                        "media_type",
+                                        "data"
+                                      ]
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "type": {
+                                          "type": "string",
+                                          "enum": [
+                                            "url"
+                                          ]
+                                        },
+                                        "url": {
+                                          "type": "string",
+                                          "format": "uri"
+                                        }
+                                      },
+                                      "required": [
+                                        "type",
+                                        "url"
+                                      ]
+                                    }
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "type",
+                                "source"
+                              ]
+                            }
+                          ]
+                        },
+                        "minItems": 1
+                      }
+                    ]
+                  },
+                  "stream": {
+                    "type": "boolean"
+                  },
+                  "includePartialMessages": {
+                    "type": "boolean"
+                  },
+                  "options": {
+                    "type": "object",
+                    "properties": {
+                      "cwd": {
+                        "type": "string"
+                      },
+                      "model": {
+                        "type": "string"
+                      },
+                      "permissionMode": {
+                        "type": "string",
+                        "enum": [
+                          "default",
+                          "acceptEdits",
+                          "bypassPermissions",
+                          "plan",
+                          "dontAsk",
+                          "auto"
+                        ]
+                      },
+                      "settingSources": {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "enum": [
+                            "user",
+                            "project",
+                            "local"
+                          ]
+                        }
+                      },
+                      "systemPrompt": {
+                        "type": "string"
+                      },
+                      "appendSystemPrompt": {
+                        "type": "string"
+                      },
+                      "allowedTools": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "disallowedTools": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalDirectories": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "tools": {
+                        "anyOf": [
+                          {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "enum": [
+                                  "preset"
+                                ]
+                              },
+                              "preset": {
+                                "type": "string",
+                                "enum": [
+                                  "claude_code"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "type",
+                              "preset"
+                            ]
+                          }
+                        ]
+                      },
+                      "maxTurns": {
+                        "type": "integer",
+                        "exclusiveMinimum": 0
+                      },
+                      "enableFileCheckpointing": {
+                        "type": "boolean"
+                      }
+                    }
+                  },
+                  "forkSession": {
+                    "type": "boolean"
+                  },
+                  "priority": {
+                    "type": "string",
+                    "enum": [
+                      "now",
+                      "next",
+                      "later"
+                    ]
+                  }
+                },
+                "required": [
+                  "prompt"
+                ]
+              }
             }
           }
         },
@@ -249,10 +2940,14 @@
             "description": "Completed prompt run or SSE stream",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/PromptRunResponse" }
+                "schema": {
+                  "$ref": "#/components/schemas/PromptRunResponse"
+                }
               },
               "text/event-stream": {
-                "schema": { "$ref": "#/components/schemas/SseEvent" }
+                "schema": {
+                  "$ref": "#/components/schemas/SseEvent"
+                }
               }
             }
           },
@@ -260,7 +2955,9 @@
             "description": "Message injected into active run — response events flow through the original SSE stream",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/StreamedMessageResponse" }
+                "schema": {
+                  "$ref": "#/components/schemas/StreamedMessageResponse"
+                }
               }
             }
           }
@@ -273,10 +2970,12 @@
         "summary": "Interrupt an active session run",
         "parameters": [
           {
-            "in": "path",
-            "name": "sessionId",
+            "schema": {
+              "type": "string"
+            },
             "required": true,
-            "schema": { "type": "string" }
+            "name": "sessionId",
+            "in": "path"
           }
         ],
         "responses": {
@@ -287,9 +2986,16 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "ok": { "type": "boolean", "const": true }
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    }
                   },
-                  "required": ["ok"]
+                  "required": [
+                    "ok"
+                  ]
                 }
               }
             }
@@ -303,17 +3009,34 @@
         "summary": "Fork a session into a new branch",
         "parameters": [
           {
-            "in": "path",
-            "name": "sessionId",
+            "schema": {
+              "type": "string"
+            },
             "required": true,
-            "schema": { "type": "string" }
+            "name": "sessionId",
+            "in": "path"
           }
         ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/ForkSessionRequest" }
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "dir": {
+                    "type": "string"
+                  },
+                  "title": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "upToMessageId": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
             }
           }
         },
@@ -325,9 +3048,13 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "session": { "$ref": "#/components/schemas/SessionWithRuntime" }
+                    "session": {
+                      "$ref": "#/components/schemas/SessionWithRuntime"
+                    }
                   },
-                  "required": ["session"]
+                  "required": [
+                    "session"
+                  ]
                 }
               }
             }
@@ -342,17 +3069,33 @@
         "description": "Rolls back file changes to the state at a specific user message. Requires the session to have been started with options.enableFileCheckpointing=true and to have an active run.",
         "parameters": [
           {
-            "in": "path",
-            "name": "sessionId",
+            "schema": {
+              "type": "string"
+            },
             "required": true,
-            "schema": { "type": "string" }
+            "name": "sessionId",
+            "in": "path"
           }
         ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/RewindRequest" }
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "userMessageId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "dryRun": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "userMessageId"
+                ]
+              }
             }
           }
         },
@@ -361,12 +3104,18 @@
             "description": "Rewind result",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/RewindResult" }
+                "schema": {
+                  "$ref": "#/components/schemas/RewindResult"
+                }
               }
             }
           },
-          "404": { "$ref": "#/components/responses/NotFound" },
-          "409": { "$ref": "#/components/responses/Conflict" }
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
         }
       }
     },
@@ -377,10 +3126,12 @@
         "description": "Returns slash commands available in the running Claude Code process. Requires an active run.",
         "parameters": [
           {
-            "in": "path",
-            "name": "sessionId",
+            "schema": {
+              "type": "string"
+            },
             "required": true,
-            "schema": { "type": "string" }
+            "name": "sessionId",
+            "in": "path"
           }
         ],
         "responses": {
@@ -393,16 +3144,24 @@
                   "properties": {
                     "commands": {
                       "type": "array",
-                      "items": { "$ref": "#/components/schemas/SlashCommand" }
+                      "items": {
+                        "$ref": "#/components/schemas/SlashCommand"
+                      }
                     }
                   },
-                  "required": ["commands"]
+                  "required": [
+                    "commands"
+                  ]
                 }
               }
             }
           },
-          "404": { "$ref": "#/components/responses/NotFound" },
-          "409": { "$ref": "#/components/responses/Conflict" }
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
         }
       }
     },
@@ -413,10 +3172,12 @@
         "description": "Returns model info from the running Claude Code process. Requires an active run.",
         "parameters": [
           {
-            "in": "path",
-            "name": "sessionId",
+            "schema": {
+              "type": "string"
+            },
             "required": true,
-            "schema": { "type": "string" }
+            "name": "sessionId",
+            "in": "path"
           }
         ],
         "responses": {
@@ -429,16 +3190,24 @@
                   "properties": {
                     "models": {
                       "type": "array",
-                      "items": { "$ref": "#/components/schemas/ModelInfo" }
+                      "items": {
+                        "$ref": "#/components/schemas/ModelInfo"
+                      }
                     }
                   },
-                  "required": ["models"]
+                  "required": [
+                    "models"
+                  ]
                 }
               }
             }
           },
-          "404": { "$ref": "#/components/responses/NotFound" },
-          "409": { "$ref": "#/components/responses/Conflict" }
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
         }
       }
     },
@@ -449,10 +3218,12 @@
         "description": "Returns agent info from the running Claude Code process. Requires an active run.",
         "parameters": [
           {
-            "in": "path",
-            "name": "sessionId",
+            "schema": {
+              "type": "string"
+            },
             "required": true,
-            "schema": { "type": "string" }
+            "name": "sessionId",
+            "in": "path"
           }
         ],
         "responses": {
@@ -465,16 +3236,24 @@
                   "properties": {
                     "agents": {
                       "type": "array",
-                      "items": { "$ref": "#/components/schemas/AgentInfo" }
+                      "items": {
+                        "$ref": "#/components/schemas/AgentInfo"
+                      }
                     }
                   },
-                  "required": ["agents"]
+                  "required": [
+                    "agents"
+                  ]
                 }
               }
             }
           },
-          "404": { "$ref": "#/components/responses/NotFound" },
-          "409": { "$ref": "#/components/responses/Conflict" }
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
         }
       }
     },
@@ -485,10 +3264,12 @@
         "description": "Returns a token usage breakdown by category. Requires an active run.",
         "parameters": [
           {
-            "in": "path",
-            "name": "sessionId",
+            "schema": {
+              "type": "string"
+            },
             "required": true,
-            "schema": { "type": "string" }
+            "name": "sessionId",
+            "in": "path"
           }
         ],
         "responses": {
@@ -496,12 +3277,18 @@
             "description": "Context usage",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ContextUsage" }
+                "schema": {
+                  "$ref": "#/components/schemas/ContextUsage"
+                }
               }
             }
           },
-          "404": { "$ref": "#/components/responses/NotFound" },
-          "409": { "$ref": "#/components/responses/Conflict" }
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
         }
       }
     },
@@ -511,14 +3298,18 @@
         "summary": "List subagents (not yet implemented)",
         "parameters": [
           {
-            "in": "path",
-            "name": "sessionId",
+            "schema": {
+              "type": "string"
+            },
             "required": true,
-            "schema": { "type": "string" }
+            "name": "sessionId",
+            "in": "path"
           }
         ],
         "responses": {
-          "501": { "description": "Not implemented" }
+          "501": {
+            "description": "Not implemented"
+          }
         }
       }
     },
@@ -528,36 +3319,54 @@
         "summary": "Get subagent messages",
         "parameters": [
           {
-            "in": "path",
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
             "name": "sessionId",
-            "required": true,
-            "schema": { "type": "string" }
+            "in": "path"
           },
           {
-            "in": "path",
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
             "name": "agentId",
-            "required": true,
-            "schema": { "type": "string" }
+            "in": "path"
           },
           {
-            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
             "name": "dir",
-            "schema": { "type": "string" }
+            "in": "query"
           },
           {
-            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "required": false,
             "name": "limit",
-            "schema": { "type": "integer", "minimum": 1 }
+            "in": "query"
           },
           {
-            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "required": false,
             "name": "offset",
-            "schema": { "type": "integer", "minimum": 0 }
+            "in": "query"
           },
           {
-            "in": "query",
+            "schema": {
+              "type": "boolean"
+            },
+            "required": false,
             "name": "includeSystemMessages",
-            "schema": { "type": "boolean" }
+            "in": "query"
           }
         ],
         "responses": {
@@ -570,10 +3379,14 @@
                   "properties": {
                     "messages": {
                       "type": "array",
-                      "items": { "$ref": "#/components/schemas/SessionMessage" }
+                      "items": {
+                        "$ref": "#/components/schemas/SessionMessage"
+                      }
                     }
                   },
-                  "required": ["messages"]
+                  "required": [
+                    "messages"
+                  ]
                 }
               }
             }
@@ -588,10 +3401,12 @@
         "description": "Changes the model on an active session. Requires an active run.",
         "parameters": [
           {
-            "in": "path",
-            "name": "sessionId",
+            "schema": {
+              "type": "string"
+            },
             "required": true,
-            "schema": { "type": "string" }
+            "name": "sessionId",
+            "in": "path"
           }
         ],
         "requestBody": {
@@ -601,7 +3416,9 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "model": { "type": "string" }
+                  "model": {
+                    "type": "string"
+                  }
                 }
               }
             }
@@ -615,17 +3432,33 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "ok": { "type": "boolean", "const": true },
-                    "sessionId": { "type": "string" },
-                    "model": { "type": "string" }
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "sessionId": {
+                      "type": "string"
+                    },
+                    "model": {
+                      "type": "string"
+                    }
                   },
-                  "required": ["ok", "sessionId"]
+                  "required": [
+                    "ok",
+                    "sessionId"
+                  ]
                 }
               }
             }
           },
-          "404": { "$ref": "#/components/responses/NotFound" },
-          "409": { "$ref": "#/components/responses/Conflict" }
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
         }
       }
     },
@@ -636,10 +3469,12 @@
         "description": "Changes the permission mode on an active session. bypassPermissions is rejected with 400. Requires an active run.",
         "parameters": [
           {
-            "in": "path",
-            "name": "sessionId",
+            "schema": {
+              "type": "string"
+            },
             "required": true,
-            "schema": { "type": "string" }
+            "name": "sessionId",
+            "in": "path"
           }
         ],
         "requestBody": {
@@ -649,9 +3484,21 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "permissionMode": { "type": "string", "enum": ["default", "acceptEdits", "plan", "dontAsk", "auto"] }
+                  "permissionMode": {
+                    "type": "string",
+                    "enum": [
+                      "default",
+                      "acceptEdits",
+                      "bypassPermissions",
+                      "plan",
+                      "dontAsk",
+                      "auto"
+                    ]
+                  }
                 },
-                "required": ["permissionMode"]
+                "required": [
+                  "permissionMode"
+                ]
               }
             }
           }
@@ -664,11 +3511,24 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "ok": { "type": "boolean", "const": true },
-                    "sessionId": { "type": "string" },
-                    "permissionMode": { "type": "string" }
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "sessionId": {
+                      "type": "string"
+                    },
+                    "permissionMode": {
+                      "type": "string"
+                    }
                   },
-                  "required": ["ok", "sessionId", "permissionMode"]
+                  "required": [
+                    "ok",
+                    "sessionId",
+                    "permissionMode"
+                  ]
                 }
               }
             }
@@ -677,12 +3537,18 @@
             "description": "Bad request (e.g. bypassPermissions is not allowed)",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
               }
             }
           },
-          "404": { "$ref": "#/components/responses/NotFound" },
-          "409": { "$ref": "#/components/responses/Conflict" }
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
         }
       }
     },
@@ -693,10 +3559,12 @@
         "description": "Resolves the paused canUseTool callback after a permission.requested SSE event. Returns 404 if no permission request is currently pending for the session.",
         "parameters": [
           {
-            "in": "path",
-            "name": "sessionId",
+            "schema": {
+              "type": "string"
+            },
             "required": true,
-            "schema": { "type": "string" }
+            "name": "sessionId",
+            "in": "path"
           }
         ],
         "requestBody": {
@@ -706,9 +3574,17 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "decision": { "type": "string", "enum": ["allow", "deny"] }
+                  "decision": {
+                    "type": "string",
+                    "enum": [
+                      "allow",
+                      "deny"
+                    ]
+                  }
                 },
-                "required": ["decision"]
+                "required": [
+                  "decision"
+                ]
               }
             }
           }
@@ -721,16 +3597,35 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "ok": { "type": "boolean", "const": true },
-                    "sessionId": { "type": "string" },
-                    "decision": { "type": "string", "enum": ["allow", "deny"] }
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "sessionId": {
+                      "type": "string"
+                    },
+                    "decision": {
+                      "type": "string",
+                      "enum": [
+                        "allow",
+                        "deny"
+                      ]
+                    }
                   },
-                  "required": ["ok", "sessionId", "decision"]
+                  "required": [
+                    "ok",
+                    "sessionId",
+                    "decision"
+                  ]
                 }
               }
             }
           },
-          "404": { "$ref": "#/components/responses/NotFound" }
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
         }
       }
     },
@@ -741,10 +3636,12 @@
         "description": "Resolves the paused AskUserQuestion canUseTool callback after a question.asked SSE event. Returns 404 if no question is currently pending for the session.",
         "parameters": [
           {
-            "in": "path",
-            "name": "sessionId",
+            "schema": {
+              "type": "string"
+            },
             "required": true,
-            "schema": { "type": "string" }
+            "name": "sessionId",
+            "in": "path"
           }
         ],
         "requestBody": {
@@ -756,16 +3653,25 @@
                 "properties": {
                   "answers": {
                     "type": "object",
-                    "description": "Map of question text to selected option label(s). For multi-select questions, pass an array of labels.",
                     "additionalProperties": {
-                      "oneOf": [
-                        { "type": "string" },
-                        { "type": "array", "items": { "type": "string" } }
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
                       ]
-                    }
+                    },
+                    "description": "Map of question text to selected option label(s). For multi-select questions, pass an array of labels."
                   }
                 },
-                "required": ["answers"]
+                "required": [
+                  "answers"
+                ]
               }
             }
           }
@@ -778,700 +3684,30 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "ok": { "type": "boolean", "const": true },
-                    "sessionId": { "type": "string" }
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "sessionId": {
+                      "type": "string"
+                    }
                   },
-                  "required": ["ok", "sessionId"]
+                  "required": [
+                    "ok",
+                    "sessionId"
+                  ]
                 }
               }
             }
           },
-          "404": { "$ref": "#/components/responses/NotFound" }
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
         }
       }
     }
   },
-  "components": {
-    "schemas": {
-      "Health": {
-        "type": "object",
-        "properties": {
-          "healthy": { "type": "boolean", "const": true },
-          "service": { "type": "string" },
-          "host": { "type": "string" },
-          "port": { "type": "integer" },
-          "timestamp": { "type": "string", "format": "date-time" }
-        },
-        "required": ["healthy", "service", "host", "port", "timestamp"]
-      },
-      "Runtime": {
-        "type": ["object", "null"],
-        "properties": {
-          "sessionId": { "type": "string" },
-          "status": { "type": "string", "enum": ["running", "stopping"] },
-          "startedAt": { "type": "integer" }
-        }
-      },
-      "Session": {
-        "type": "object",
-        "properties": {
-          "sessionId": { "type": "string" },
-          "summary": { "type": "string" },
-          "lastModified": { "type": "integer" },
-          "fileSize": { "type": ["integer", "null"] },
-          "customTitle": { "type": ["string", "null"] },
-          "firstPrompt": { "type": ["string", "null"] },
-          "gitBranch": { "type": ["string", "null"] },
-          "cwd": { "type": ["string", "null"] },
-          "tag": { "type": ["string", "null"] },
-          "createdAt": { "type": ["integer", "null"] }
-        },
-        "required": ["sessionId", "summary", "lastModified", "fileSize", "customTitle", "firstPrompt", "gitBranch", "cwd", "tag", "createdAt"]
-      },
-      "SessionWithRuntime": {
-        "allOf": [
-          { "$ref": "#/components/schemas/Session" },
-          {
-            "type": "object",
-            "properties": {
-              "runtime": { "$ref": "#/components/schemas/Runtime" }
-            },
-            "required": ["runtime"]
-          }
-        ]
-      },
-      "SessionMessage": {
-        "type": "object",
-        "properties": {
-          "type": { "type": "string", "enum": ["user", "assistant", "system"] },
-          "uuid": { "type": "string" },
-          "sessionId": { "type": "string" },
-          "message": {},
-          "parentToolUseId": { "type": ["string", "null"] }
-        },
-        "required": ["type", "uuid", "sessionId", "message", "parentToolUseId"]
-      },
-      "QueryOptions": {
-        "type": "object",
-        "properties": {
-          "cwd": { "type": "string" },
-          "model": { "type": "string" },
-          "permissionMode": { "type": "string", "enum": ["default", "acceptEdits", "bypassPermissions", "plan", "dontAsk", "auto"] },
-          "settingSources": {
-            "type": "array",
-            "items": { "type": "string", "enum": ["user", "project", "local"] }
-          },
-          "systemPrompt": { "type": "string" },
-          "appendSystemPrompt": { "type": "string" },
-          "allowedTools": { "type": "array", "items": { "type": "string" } },
-          "disallowedTools": { "type": "array", "items": { "type": "string" } },
-          "additionalDirectories": { "type": "array", "items": { "type": "string" } },
-          "tools": {
-            "oneOf": [
-              { "type": "array", "items": { "type": "string" } },
-              {
-                "type": "object",
-                "properties": {
-                  "type": { "type": "string", "const": "preset" },
-                  "preset": { "type": "string", "const": "claude_code" }
-                },
-                "required": ["type", "preset"]
-              }
-            ]
-          },
-          "maxTurns": { "type": "integer", "minimum": 1 },
-          "enableFileCheckpointing": { "type": "boolean", "description": "Snapshot files before each tool execution, enabling POST /sessions/:id/rewind" }
-        }
-      },
-      "TextBlockParam": {
-        "type": "object",
-        "description": "A plain-text content block in a user message",
-        "properties": {
-          "type": { "type": "string", "const": "text" },
-          "text": { "type": "string", "minLength": 1 }
-        },
-        "required": ["type", "text"]
-      },
-      "ImageBlockParam": {
-        "type": "object",
-        "description": "An image content block in a user message. Use base64 for inline data or url for remote images.",
-        "properties": {
-          "type": { "type": "string", "const": "image" },
-          "source": {
-            "oneOf": [
-              {
-                "type": "object",
-                "description": "Base64-encoded image data",
-                "properties": {
-                  "type": { "type": "string", "const": "base64" },
-                  "media_type": { "type": "string", "enum": ["image/jpeg", "image/png", "image/gif", "image/webp"] },
-                  "data": { "type": "string", "description": "Base64-encoded image bytes" }
-                },
-                "required": ["type", "media_type", "data"]
-              },
-              {
-                "type": "object",
-                "description": "Remote image URL",
-                "properties": {
-                  "type": { "type": "string", "const": "url" },
-                  "url": { "type": "string", "format": "uri" }
-                },
-                "required": ["type", "url"]
-              }
-            ]
-          }
-        },
-        "required": ["type", "source"]
-      },
-      "ContentBlockParam": {
-        "oneOf": [
-          { "$ref": "#/components/schemas/TextBlockParam" },
-          { "$ref": "#/components/schemas/ImageBlockParam" }
-        ],
-        "discriminator": { "propertyName": "type" }
-      },
-      "PromptContent": {
-        "oneOf": [
-          { "type": "string", "minLength": 1, "description": "Plain text message" },
-          {
-            "type": "array",
-            "description": "Structured message with text and/or image blocks",
-            "items": { "$ref": "#/components/schemas/ContentBlockParam" },
-            "minItems": 1
-          }
-        ]
-      },
-      "StreamedMessageResponse": {
-        "type": "object",
-        "description": "Returned when a message is injected into an active streaming session via streamInput. The agent's response flows through the original SSE stream.",
-        "properties": {
-          "streamed": { "type": "boolean", "const": true },
-          "sessionId": { "type": "string" }
-        },
-        "required": ["streamed", "sessionId"]
-      },
-      "CreateSessionRequest": {
-        "type": "object",
-        "properties": {
-          "prompt": { "$ref": "#/components/schemas/PromptContent" },
-          "stream": { "type": "boolean" },
-          "includePartialMessages": { "type": "boolean" },
-          "options": { "$ref": "#/components/schemas/QueryOptions" }
-        },
-        "required": ["prompt"]
-      },
-      "SendMessageRequest": {
-        "type": "object",
-        "properties": {
-          "prompt": { "$ref": "#/components/schemas/PromptContent" },
-          "stream": { "type": "boolean" },
-          "includePartialMessages": { "type": "boolean" },
-          "forkSession": { "type": "boolean" },
-          "priority": { "type": "string", "enum": ["now", "next", "later"], "description": "Message delivery priority when injecting into an active run. 'now' interrupts current work, 'next' queues after current turn, 'later' queues at the end." },
-          "options": { "$ref": "#/components/schemas/QueryOptions" }
-        },
-        "required": ["prompt"]
-      },
-      "UpdateSessionRequest": {
-        "type": "object",
-        "properties": {
-          "dir": { "type": "string" },
-          "title": { "type": "string" },
-          "tag": { "type": ["string", "null"] }
-        }
-      },
-      "ForkSessionRequest": {
-        "type": "object",
-        "properties": {
-          "dir": { "type": "string" },
-          "title": { "type": "string" },
-          "upToMessageId": { "type": "string" }
-        }
-      },
-      "PromptRunResponse": {
-        "type": "object",
-        "properties": {
-          "sessionId": { "type": "string" },
-          "result": {},
-          "events": {
-            "type": "array",
-            "items": { "$ref": "#/components/schemas/SseEvent" }
-          }
-        },
-        "required": ["sessionId", "result", "events"]
-      },
-      "SseEvent": {
-        "oneOf": [
-          { "$ref": "#/components/schemas/SseSessionInitEvent" },
-          { "$ref": "#/components/schemas/SseSessionStatusEvent" },
-          { "$ref": "#/components/schemas/SsePermissionRequestedEvent" },
-          { "$ref": "#/components/schemas/SseQuestionAskedEvent" },
-          { "$ref": "#/components/schemas/SseMessageAssistantEvent" },
-          { "$ref": "#/components/schemas/SseMessageDeltaEvent" },
-          { "$ref": "#/components/schemas/SseResultEvent" },
-          { "$ref": "#/components/schemas/SseTaskStartedEvent" },
-          { "$ref": "#/components/schemas/SseTaskProgressEvent" },
-          { "$ref": "#/components/schemas/SseTaskNotificationEvent" },
-          { "$ref": "#/components/schemas/SseSessionCompletedEvent" },
-          { "$ref": "#/components/schemas/SseErrorEvent" },
-          { "$ref": "#/components/schemas/SseMessageRawEvent" }
-        ],
-        "discriminator": { "propertyName": "event" }
-      },
-      "SseSessionInitEvent": {
-        "type": "object",
-        "properties": {
-          "event": { "type": "string", "const": "session.init" },
-          "data": {
-            "type": "object",
-            "properties": {
-              "sessionId": { "type": "string" },
-              "uuid": { "type": "string" },
-              "cwd": { "type": "string" },
-              "model": { "type": "string" },
-              "tools": { "type": "array", "items": { "type": "string" } },
-              "permissionMode": { "type": "string" },
-              "slashCommands": { "type": "array", "items": { "type": "string" } },
-              "skills": { "type": "array", "items": { "type": "string" } },
-              "mcpServers": { "type": "array", "items": {} },
-              "claudeCodeVersion": { "type": "string" }
-            },
-            "required": ["sessionId", "uuid", "cwd", "model", "tools", "permissionMode", "slashCommands", "skills", "mcpServers", "claudeCodeVersion"]
-          }
-        },
-        "required": ["event", "data"]
-      },
-      "SseSessionStatusEvent": {
-        "type": "object",
-        "properties": {
-          "event": { "type": "string", "const": "session.status" },
-          "data": {
-            "type": "object",
-            "properties": {
-              "sessionId": { "type": "string" },
-              "uuid": { "type": "string" },
-              "status": { "type": "string" },
-              "permissionMode": { "type": ["string", "null"] },
-              "compactResult": {},
-              "compactError": {}
-            },
-            "required": ["sessionId", "uuid", "status", "permissionMode", "compactResult", "compactError"]
-          }
-        },
-        "required": ["event", "data"]
-      },
-      "SsePermissionRequestedEvent": {
-        "type": "object",
-        "description": "Emitted when the agent needs user approval to use a tool. The SSE stream pauses until POST /sessions/{sessionId}/permissions/respond is called.",
-        "properties": {
-          "event": { "type": "string", "const": "permission.requested" },
-          "data": {
-            "type": "object",
-            "properties": {
-              "sessionId": { "type": "string" },
-              "toolName": { "type": "string", "description": "Name of the tool requesting permission (e.g. Bash, Write, Edit)" },
-              "toolInput": { "type": "object", "additionalProperties": true, "description": "Parameters the tool would be called with" },
-              "toolUseId": { "type": "string", "description": "Unique identifier for this tool call within the assistant message" },
-              "blockedPath": { "type": ["string", "null"], "description": "File path that triggered the permission check, if applicable" },
-              "decisionReason": { "type": ["string", "null"], "description": "Explanation of why this permission check was triggered" }
-            },
-            "required": ["sessionId", "toolName", "toolInput", "toolUseId", "blockedPath", "decisionReason"]
-          }
-        },
-        "required": ["event", "data"]
-      },
-      "SseQuestionAskedEvent": {
-        "type": "object",
-        "description": "Emitted when Claude calls AskUserQuestion. The SSE stream pauses until POST /sessions/{sessionId}/questions/respond is called with the user's answers.",
-        "properties": {
-          "event": { "type": "string", "const": "question.asked" },
-          "data": {
-            "type": "object",
-            "properties": {
-              "sessionId": { "type": "string" },
-              "questions": {
-                "type": "array",
-                "description": "Questions Claude is asking. Each item has question, header, options (label+description), and multiSelect.",
-                "items": {
-                  "type": "object",
-                  "properties": {
-                    "question": { "type": "string", "description": "Full question text to display" },
-                    "header": { "type": "string", "description": "Short label (max 12 chars)" },
-                    "options": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "label": { "type": "string" },
-                          "description": { "type": "string" },
-                          "preview": { "type": "string", "description": "Optional HTML/markdown preview (only present when toolConfig.askUserQuestion.previewFormat is set)" }
-                        },
-                        "required": ["label", "description"]
-                      }
-                    },
-                    "multiSelect": { "type": "boolean", "description": "Whether multiple options can be selected" }
-                  },
-                  "required": ["question", "header", "options", "multiSelect"]
-                }
-              }
-            },
-            "required": ["sessionId", "questions"]
-          }
-        },
-        "required": ["event", "data"]
-      },
-      "AnthropicContentBlock": {
-        "oneOf": [
-          {
-            "type": "object",
-            "properties": {
-              "type": { "type": "string", "const": "text" },
-              "text": { "type": "string" }
-            },
-            "required": ["type", "text"]
-          },
-          {
-            "type": "object",
-            "properties": {
-              "type": { "type": "string", "const": "tool_use" },
-              "id": { "type": "string" },
-              "name": { "type": "string" },
-              "input": { "type": "object", "additionalProperties": true }
-            },
-            "required": ["type", "id", "name", "input"]
-          }
-        ]
-      },
-      "SseMessageAssistantEvent": {
-        "type": "object",
-        "properties": {
-          "event": { "type": "string", "const": "message.assistant" },
-          "data": {
-            "type": "object",
-            "properties": {
-              "sessionId": { "type": "string" },
-              "uuid": { "type": "string" },
-              "text": { "type": "string", "description": "Concatenated text from all text content blocks" },
-              "message": {
-                "type": "object",
-                "description": "Full Anthropic API message object",
-                "properties": {
-                  "id": { "type": "string" },
-                  "type": { "type": "string", "const": "message" },
-                  "role": { "type": "string", "const": "assistant" },
-                  "model": { "type": "string" },
-                  "content": {
-                    "type": "array",
-                    "items": { "$ref": "#/components/schemas/AnthropicContentBlock" }
-                  },
-                  "stop_reason": { "type": ["string", "null"] },
-                  "stop_sequence": { "type": ["string", "null"] },
-                  "usage": {
-                    "type": "object",
-                    "properties": {
-                      "input_tokens": { "type": "integer" },
-                      "output_tokens": { "type": "integer" },
-                      "cache_creation_input_tokens": { "type": "integer" },
-                      "cache_read_input_tokens": { "type": "integer" }
-                    }
-                  }
-                },
-                "required": ["id", "type", "role", "model", "content"]
-              },
-              "parentToolUseId": { "type": ["string", "null"], "description": "Set when this message is a sub-agent response triggered by a tool_use block" },
-              "error": {}
-            },
-            "required": ["sessionId", "uuid", "text", "message", "parentToolUseId", "error"]
-          }
-        },
-        "required": ["event", "data"]
-      },
-      "SseMessageDeltaEvent": {
-        "type": "object",
-        "description": "Streaming delta — only emitted when includePartialMessages is true",
-        "properties": {
-          "event": { "type": "string", "const": "message.delta" },
-          "data": {
-            "type": "object",
-            "properties": {
-              "sessionId": { "type": "string" },
-              "uuid": { "type": "string" },
-              "event": {
-                "type": "object",
-                "description": "Raw Anthropic stream event (content_block_start, content_block_delta, content_block_stop, message_delta, message_start, message_stop)",
-                "properties": {
-                  "type": { "type": "string" },
-                  "index": { "type": "integer" },
-                  "delta": {
-                    "type": "object",
-                    "properties": {
-                      "type": { "type": "string", "enum": ["text_delta", "input_json_delta"] },
-                      "text": { "type": "string", "description": "Present when delta.type is text_delta" },
-                      "partial_json": { "type": "string", "description": "Present when delta.type is input_json_delta" }
-                    }
-                  }
-                },
-                "required": ["type"]
-              },
-              "parentToolUseId": { "type": ["string", "null"] },
-              "ttftMs": { "type": ["integer", "null"], "description": "Time to first token in milliseconds" }
-            },
-            "required": ["sessionId", "uuid", "event", "parentToolUseId", "ttftMs"]
-          }
-        },
-        "required": ["event", "data"]
-      },
-      "SseResultEvent": {
-        "type": "object",
-        "properties": {
-          "event": { "type": "string", "const": "result" },
-          "data": {
-            "type": "object",
-            "properties": {
-              "sessionId": { "type": "string" },
-              "uuid": { "type": "string" },
-              "subtype": { "type": "string", "enum": ["success", "error_max_turns", "error_during_execution"] },
-              "isError": { "type": "boolean" },
-              "result": { "type": ["string", "null"], "description": "Final result text; populated when subtype is success" },
-              "errors": { "type": ["array", "null"], "items": {}, "description": "Error objects; populated when subtype is not success" },
-              "stopReason": { "type": "string" },
-              "terminalReason": { "type": ["string", "null"] },
-              "durationMs": { "type": "integer" },
-              "durationApiMs": { "type": "integer" },
-              "numTurns": { "type": "integer" },
-              "totalCostUsd": { "type": "number" }
-            },
-            "required": ["sessionId", "uuid", "subtype", "isError", "result", "errors", "stopReason", "terminalReason", "durationMs", "durationApiMs", "numTurns", "totalCostUsd"]
-          }
-        },
-        "required": ["event", "data"]
-      },
-      "SseTaskStartedEvent": {
-        "type": "object",
-        "properties": {
-          "event": { "type": "string", "const": "task.started" },
-          "data": {
-            "type": "object",
-            "properties": {
-              "sessionId": { "type": "string" },
-              "uuid": { "type": "string" },
-              "taskId": { "type": "string" },
-              "description": { "type": "string" },
-              "taskType": { "type": ["string", "null"] },
-              "toolUseId": { "type": ["string", "null"] }
-            },
-            "required": ["sessionId", "uuid", "taskId", "description", "taskType", "toolUseId"]
-          }
-        },
-        "required": ["event", "data"]
-      },
-      "SseTaskProgressEvent": {
-        "type": "object",
-        "properties": {
-          "event": { "type": "string", "const": "task.progress" },
-          "data": {
-            "type": "object",
-            "properties": {
-              "sessionId": { "type": "string" },
-              "uuid": { "type": "string" },
-              "taskId": { "type": "string" },
-              "description": { "type": "string" },
-              "toolUseId": { "type": ["string", "null"] },
-              "usage": { "type": "object", "additionalProperties": true },
-              "lastToolName": { "type": ["string", "null"] },
-              "summary": { "type": ["string", "null"] }
-            },
-            "required": ["sessionId", "uuid", "taskId", "description", "toolUseId", "usage", "lastToolName", "summary"]
-          }
-        },
-        "required": ["event", "data"]
-      },
-      "SseTaskNotificationEvent": {
-        "type": "object",
-        "properties": {
-          "event": { "type": "string", "const": "task.notification" },
-          "data": {
-            "type": "object",
-            "properties": {
-              "sessionId": { "type": "string" },
-              "uuid": { "type": "string" },
-              "taskId": { "type": "string" },
-              "toolUseId": { "type": ["string", "null"] },
-              "status": { "type": "string" },
-              "outputFile": {},
-              "summary": { "type": "string" },
-              "usage": {}
-            },
-            "required": ["sessionId", "uuid", "taskId", "toolUseId", "status", "outputFile", "summary", "usage"]
-          }
-        },
-        "required": ["event", "data"]
-      },
-      "SseSessionCompletedEvent": {
-        "type": "object",
-        "properties": {
-          "event": { "type": "string", "const": "session.completed" },
-          "data": {
-            "type": "object",
-            "properties": {
-              "sessionId": { "type": "string" },
-              "subtype": { "type": ["string", "null"] }
-            },
-            "required": ["sessionId", "subtype"]
-          }
-        },
-        "required": ["event", "data"]
-      },
-      "SseErrorEvent": {
-        "type": "object",
-        "properties": {
-          "event": { "type": "string", "const": "error" },
-          "data": {
-            "type": "object",
-            "properties": {
-              "message": { "type": "string" },
-              "code": { "type": "integer", "description": "HTTP status code, default 500" }
-            },
-            "required": ["message", "code"]
-          }
-        },
-        "required": ["event", "data"]
-      },
-      "SseMessageRawEvent": {
-        "type": "object",
-        "description": "Catch-all for unrecognized SDK message types",
-        "properties": {
-          "event": { "type": "string", "const": "message.raw" },
-          "data": {
-            "type": "object",
-            "properties": {
-              "sessionId": { "type": "string" },
-              "uuid": { "type": "string" },
-              "message": { "description": "Raw unrecognized SDK message object" }
-            },
-            "required": ["sessionId", "uuid", "message"]
-          }
-        },
-        "required": ["event", "data"]
-      },
-      "RewindRequest": {
-        "type": "object",
-        "properties": {
-          "userMessageId": { "type": "string", "description": "UUID of the user message to rewind to" },
-          "dryRun": { "type": "boolean", "description": "Report changes without modifying files" }
-        },
-        "required": ["userMessageId"]
-      },
-      "RewindResult": {
-        "type": "object",
-        "properties": {
-          "canRewind": { "type": "boolean" },
-          "filesChanged": { "type": "array", "items": { "type": "string" } },
-          "insertions": { "type": "integer" },
-          "deletions": { "type": "integer" },
-          "error": { "type": "string" }
-        },
-        "required": ["canRewind"]
-      },
-      "SlashCommand": {
-        "type": "object",
-        "properties": {
-          "name": { "type": "string" },
-          "description": { "type": "string" },
-          "argumentHint": { "type": "string" }
-        },
-        "required": ["name", "description", "argumentHint"]
-      },
-      "ModelInfo": {
-        "type": "object",
-        "properties": {
-          "value": { "type": "string" },
-          "displayName": { "type": "string" },
-          "description": { "type": "string" },
-          "supportsEffort": { "type": "boolean" },
-          "supportedEffortLevels": {
-            "type": "array",
-            "items": { "type": "string", "enum": ["low", "medium", "high", "xhigh", "max"] }
-          }
-        },
-        "required": ["value", "displayName", "description"]
-      },
-      "AgentInfo": {
-        "type": "object",
-        "properties": {
-          "name": { "type": "string" },
-          "description": { "type": "string" }
-        },
-        "required": ["name"]
-      },
-      "ContextUsageCategory": {
-        "type": "object",
-        "properties": {
-          "name": { "type": "string" },
-          "tokens": { "type": "integer" },
-          "color": { "type": "string" },
-          "isDeferred": { "type": "boolean" }
-        },
-        "required": ["name", "tokens", "color"]
-      },
-      "ContextUsage": {
-        "type": "object",
-        "properties": {
-          "categories": {
-            "type": "array",
-            "items": { "$ref": "#/components/schemas/ContextUsageCategory" }
-          },
-          "totalTokens": { "type": "integer" },
-          "maxTokens": { "type": "integer" },
-          "rawMaxTokens": { "type": "integer" },
-          "percentage": { "type": "number" },
-          "model": { "type": "string" },
-          "memoryFiles": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "path": { "type": "string" },
-                "type": { "type": "string" },
-                "tokens": { "type": "integer" }
-              }
-            }
-          }
-        },
-        "required": ["categories", "totalTokens", "maxTokens", "percentage", "model"]
-      },
-      "ErrorResponse": {
-        "type": "object",
-        "properties": {
-          "error": {
-            "type": "object",
-            "properties": {
-              "message": { "type": "string" },
-              "details": {}
-            },
-            "required": ["message"]
-          }
-        },
-        "required": ["error"]
-      }
-    },
-    "responses": {
-      "NotFound": {
-        "description": "Session not found",
-        "content": {
-          "application/json": {
-            "schema": { "$ref": "#/components/schemas/ErrorResponse" }
-          }
-        }
-      },
-      "Conflict": {
-        "description": "Session has no active run (start a prompt first)",
-        "content": {
-          "application/json": {
-            "schema": { "$ref": "#/components/schemas/ErrorResponse" }
-          }
-        }
-      }
-    }
-  }
+  "webhooks": {}
 }
