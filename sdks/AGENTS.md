@@ -120,6 +120,7 @@ Always:
 - Keep package-local validation fast before widening to multi-language verification.
 - Match public behavior across languages unless a documented platform constraint prevents it.
 - Keep wire-format units and public SDK units separate. Public SDK interfaces should expose time durations as language-native duration types where available (`timedelta`, `Duration`) or otherwise as explicitly second-based fields such as `timeoutSeconds`.
+- For Kotlin SDK public APIs intended for Java interoperability, do not expose Kotlin value classes such as `kotlin.time.Duration`; they are JVM-name-mangled and can be inaccessible from Java. Prefer `java.time.Duration` or explicit primitive wire units at the public boundary, with deprecated Kotlin-friendly overloads when needed for migration.
 
 Ask first:
 
