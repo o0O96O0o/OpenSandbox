@@ -6,8 +6,6 @@ RUN npm install -g npm@11
 WORKDIR /app
 
 COPY sandboxes/claude-agent-server/package.json sandboxes/claude-agent-server/package-lock.json ./
-# npm install is used instead of npm ci to tolerate platform-specific
-# transitive dependency resolution differences between build environments.
 RUN npm install
 
 COPY sandboxes/claude-agent-server/src/ ./src/
@@ -15,11 +13,9 @@ COPY sandboxes/claude-agent-server/docs/ ./docs/
 COPY sandboxes/claude-agent-server/tsconfig.json ./
 RUN npm run build
 
-# Prune devDependencies so only production deps land in the final image
 RUN npm prune --production
 
 # --- Stage 2: Code interpreter base ---
-# Mirrors claude-agent-server/code-interpreter/Dockerfile_base with repo-root COPY paths.
 FROM ubuntu:24.04 AS code-interpreter-base
 
 ARG TARGETARCH
