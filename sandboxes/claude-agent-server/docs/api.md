@@ -146,6 +146,8 @@ assigned by the SDK and returned in the response.
 Content-Type: `text/event-stream`  
 See [SSE events](#sse-events).
 
+> **Client disconnect behavior:** closing the SSE connection does **not** abort the agent. The agent runs to completion. Use `POST /sessions/:sessionId/abort` to explicitly cancel. Reconnect with `GET /sessions/:sessionId/stream` to reattach.
+
 ---
 
 ### `GET /sessions/:sessionId`
@@ -189,6 +191,30 @@ Fetch metadata for a single session.
 ```
 
 **Errors:** `404` if the session does not exist.
+
+---
+
+### `GET /sessions/:sessionId/stream`
+
+Reattach to a running session's SSE event stream. Replays buffered events from a cursor, then streams live events until the session finishes.
+
+Use this after a client disconnect (browser refresh) to resume receiving events without losing the in-progress agent run.
+
+**Query parameters**
+
+| Name | Type | Description |
+|---|---|---|
+| `cursor` | integer | 0-based index of the last event the client received. Omit (or send `Last-Event-ID: 0`) to replay all buffered events. |
+
+The standard `Last-Event-ID` request header is also accepted as an alternative to `?cursor=`.
+
+**Response `200`**  
+Content-Type: `text/event-stream`
+
+Replays events `[cursor..]` from the in-memory buffer, then emits live events as they arrive. The stream closes after the session emits `session.completed`.
+
+**Errors:**  
+`409` if the session has no active run (already finished, never started, or unknown).
 
 ---
 
@@ -302,6 +328,8 @@ Send a follow-up message to an existing session.
 **Response `200`** (idle session, stream)  
 Content-Type: `text/event-stream`  
 See [SSE events](#sse-events).
+
+> **Client disconnect behavior:** closing the SSE connection does **not** abort the agent. Use `POST /sessions/:sessionId/abort` to explicitly cancel. Reconnect with `GET /sessions/:sessionId/stream` to reattach.
 
 **Errors:**  
 `404` if the session does not exist.
@@ -922,7 +950,7 @@ The expected response `answers` object maps the `question` text to the selected 
 
 ### `session.completed`
 
-Server-injected terminal event.
+Terminal event emitted by the server at end-of-run. Always the last event in any SSE stream (original or reattached).
 
 ```json
 {
@@ -1023,10 +1051,6 @@ A `Dockerfile` and `docker-compose.yml` are needed to:
 - copy and build the server
 - expose the port
 - set a default `ANTHROPIC_API_KEY` mount or env
-
-### Dedicated SSE-only event stream endpoint
-Currently SSE is opt-in per prompt (`"stream": true`).  
-A `GET /sessions/:sessionId/events` endpoint could let clients subscribe to a running session's events independently of the request that started it.
 
 ### OpenAPI spec polish
 The draft spec at `spec/openapi/claude-code-wrapper.openapi.json` needs:

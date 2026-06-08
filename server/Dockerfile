@@ -1,4 +1,4 @@
-FROM hub.jawsbite.com/library/python:3.10-alpine AS builder
+FROM python:3.10-alpine AS builder
 
 ENV PIP_DISABLE_PIP_VERSION_CHECK=1 \
     PYTHONDONTWRITEBYTECODE=1 \
@@ -21,7 +21,7 @@ COPY LICENSE README.md ./
 # Install the project as a wheel (non-editable) so the runtime stage needs no source copy
 RUN uv sync --frozen --no-dev --no-editable
 
-FROM hub.jawsbite.com/library/python:3.10-alpine AS runtime
+FROM python:3.10-alpine AS runtime
 
 ENV PIP_DISABLE_PIP_VERSION_CHECK=1 \
     PYTHONDONTWRITEBYTECODE=1 \

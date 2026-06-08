@@ -212,6 +212,7 @@ export async function execute(
   if (input.sessionId) {
     runtimeRegistry.start(input.sessionId, queryHandle)
     registeredActiveRun = true
+    if (onEvent) runtimeRegistry.subscribe(input.sessionId, onEvent)
   }
 
   function onSignalAbort() {
@@ -231,6 +232,7 @@ export async function execute(
       if (discoveredSessionId && !registeredActiveRun) {
         runtimeRegistry.ensureStarted(discoveredSessionId, queryHandle)
         registeredActiveRun = true
+        if (onEvent) runtimeRegistry.subscribe(discoveredSessionId, onEvent)
       }
 
       const event = normalizeMessage(message)
@@ -255,11 +257,22 @@ export async function execute(
         )
       }
 
-      onEvent?.(event)
+      if (discoveredSessionId) {
+        runtimeRegistry.emit(discoveredSessionId, event)
+      } else {
+        onEvent?.(event)
+      }
 
       if (message.type === 'result') {
         finalResult = message
       }
+    }
+
+    if (discoveredSessionId) {
+      runtimeRegistry.emit(discoveredSessionId, {
+        event: 'session.completed',
+        data: { sessionId: discoveredSessionId, subtype: finalResult?.subtype ?? null },
+      })
     }
   } finally {
     input.signal?.removeEventListener('abort', onSignalAbort)

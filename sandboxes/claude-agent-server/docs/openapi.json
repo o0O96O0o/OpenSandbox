@@ -2620,6 +2620,48 @@
         }
       }
     },
+    "/sessions/{sessionId}/stream": {
+      "get": {
+        "operationId": "sessions.stream",
+        "summary": "Reattach to a running session's SSE event stream",
+        "description": "Replays buffered events from a cursor offset, then streams live events until the session finishes. Use this after a client disconnect (browser refresh) to resume without losing the in-progress agent run. The buffer is in-memory only and is cleared when the session finishes or the server restarts.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "sessionId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "required": false,
+            "name": "cursor",
+            "in": "query",
+            "description": "0-based index of the last event the client received. Omit to replay all buffered events. The standard Last-Event-ID request header is also accepted."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "SSE stream of buffered + live events",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "$ref": "#/components/schemas/SseEvent"
+                }
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        }
+      }
+    },
     "/sessions/{sessionId}/messages": {
       "get": {
         "operationId": "sessions.messages.list",

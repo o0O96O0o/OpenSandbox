@@ -36,10 +36,25 @@ sandboxes/claude-agent-server/
 | Reference implementation | `ref/claude-agent-sdk/` (read-only) |
 
 ## CONVENTIONS
-- Has **multiple local CLAUDE.md files** (`src/lib/CLAUDE.md`, `src/lib/claude/CLAUDE.md`, `src/lib/http/CLAUDE.md`, `src/routes/CLAUDE.md`) — check them before editing sub-areas
+- Has **multiple local CLAUDE.md files** (`src/lib/CLAUDE.md`, `src/lib/claude/CLAUDE.md`, `src/lib/http/CLAUDE.md`) — check them before editing sub-areas
 - `ref/claude-agent-sdk/` is a read-only reference copy — never edit it directly
 - `openspec/changes/` archives spec evolution proposals (OSEP-style for this component)
 - CI: built as Docker image via `docker compose --profile sandbox-images build`
+
+## SSE STREAM RESUME
+
+Client disconnects (browser refresh) no longer abort the running agent. Events are buffered in memory per-session; a reconnecting client can reattach:
+
+```
+GET /sessions/:sessionId/stream?cursor=<N>
+```
+
+- `cursor` (or `Last-Event-ID` header) — 0-based index of the last event the client received; omit to replay all
+- Replays buffered events from `cursor`, then streams live events until the session finishes
+- Returns `409` if the session has no active run (already finished or was never started)
+- **Breaking change:** `POST /sessions` and `POST /sessions/:sessionId/messages` SSE disconnect no longer aborts the agent. Use `POST /sessions/:sessionId/abort` to explicitly cancel.
+
+Buffer is in-memory only — lost on server restart. For persistent history, use `GET /sessions/:sessionId/messages`.
 
 ## ANTI-PATTERNS
 - Do not edit `ref/claude-agent-sdk/` — it is a reference snapshot

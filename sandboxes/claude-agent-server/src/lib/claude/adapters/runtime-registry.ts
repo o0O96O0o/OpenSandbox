@@ -1,6 +1,7 @@
 import type { Query } from '@anthropic-ai/claude-agent-sdk'
 
 import { HttpError } from '../../http/errors.js'
+import type { NormalizedEvent } from './message-normalizer.js'
 
 export type RuntimeStatus = 'running' | 'stopping'
 
@@ -9,6 +10,10 @@ type ActiveRun = {
   query: Query
   status: RuntimeStatus
   startedAt: number
+  events: NormalizedEvent[]
+  subscribers: Set<(event: NormalizedEvent) => void>
+  completionPromise: Promise<void>
+  _resolveCompletion: () => void
 }
 
 export class RuntimeRegistry {
@@ -19,11 +24,20 @@ export class RuntimeRegistry {
       throw new HttpError(409, `Session ${sessionId} already has an active run`)
     }
 
+    let resolve!: () => void
+    const completionPromise = new Promise<void>((r) => {
+      resolve = r
+    })
+
     this.activeRuns.set(sessionId, {
       sessionId,
       query,
       status: 'running',
       startedAt: Date.now(),
+      events: [],
+      subscribers: new Set(),
+      completionPromise,
+      _resolveCompletion: resolve,
     })
   }
 
@@ -57,7 +71,47 @@ export class RuntimeRegistry {
   }
 
   finish(sessionId: string) {
+    const activeRun = this.activeRuns.get(sessionId)
+    if (activeRun) {
+      activeRun._resolveCompletion()
+    }
     this.activeRuns.delete(sessionId)
+  }
+
+  emit(sessionId: string, event: NormalizedEvent): void {
+    const activeRun = this.activeRuns.get(sessionId)
+    if (!activeRun) return
+
+    activeRun.events.push(event)
+    for (const subscriber of activeRun.subscribers) {
+      subscriber(event)
+    }
+  }
+
+  subscribe(sessionId: string, fn: (event: NormalizedEvent) => void): () => void {
+    const activeRun = this.activeRuns.get(sessionId)
+    if (!activeRun) {
+      return () => {}
+    }
+
+    activeRun.subscribers.add(fn)
+    return () => {
+      activeRun.subscribers.delete(fn)
+    }
+  }
+
+  getBufferedEvents(sessionId: string, afterIndex?: number): NormalizedEvent[] {
+    const activeRun = this.activeRuns.get(sessionId)
+    if (!activeRun) return []
+
+    if (afterIndex !== undefined) {
+      return activeRun.events.slice(afterIndex)
+    }
+    return [...activeRun.events]
+  }
+
+  getCompletionPromise(sessionId: string): Promise<void> | null {
+    return this.activeRuns.get(sessionId)?.completionPromise ?? null
   }
 }
 

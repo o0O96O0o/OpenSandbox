@@ -6,7 +6,7 @@ import { permissionModeSchema, settingSourceSchema } from './claude/adapters/sch
 const envSchema = z.object({
   PORT: z.coerce.number().int().positive().default(3000),
   HOST: z.string().default('0.0.0.0'),
-  ANTHROPIC_MODEL: z.string().optional(),
+  CLAUDE_AGENT_DEFAULT_MODEL: z.string().default("claude-sonnet-4-6"),
   CLAUDE_AGENT_DEFAULT_PERMISSION_MODE: permissionModeSchema.default('default'),
   CLAUDE_AGENT_DEFAULT_SETTING_SOURCES: z
     .string()
@@ -26,7 +26,7 @@ const parsed = envSchema.parse(process.env)
 export const config = {
   host: parsed.HOST,
   port: parsed.PORT,
-  defaultModel: parsed.ANTHROPIC_MODEL,
+  defaultModel: parsed.CLAUDE_AGENT_DEFAULT_MODEL,
   defaultPermissionMode: parsed.CLAUDE_AGENT_DEFAULT_PERMISSION_MODE,
   defaultSettingSources: parsed.CLAUDE_AGENT_DEFAULT_SETTING_SOURCES,
   authToken: parsed.CLAUDE_AGENT_REQUIRE_AUTH_TOKEN,

@@ -17,7 +17,7 @@ Owns everything that touches `@anthropic-ai/claude-agent-sdk` directly. Nothing 
 src/lib/claude/
   sdk-schemas.ts         Zod enums + queryOptionsSchema — dependency leaf (no local imports)
   session-service.ts     Core service: wraps SDK query(), session CRUD, introspection helpers
-  runtime-registry.ts    In-memory Map<sessionId, ActiveRun>; tracks live Query handles
+  runtime-registry.ts    In-memory Map<sessionId, ActiveRun>; tracks live Query handles, buffers events, fan-out subscribers
   message-normalizer.ts  Maps raw SDKMessage → NormalizedEvent shapes for HTTP responses
   S3SessionStore.ts      S3-backed SessionStore (copied verbatim from SDK ref example)
   session-store.ts       buildSessionStore() factory — constructs the SessionStore singleton
@@ -31,11 +31,14 @@ src/lib/claude/
 2. `buildOptions()` merges per-request options with server defaults from `config.ts`; rejects `bypassPermissions`
 3. `promptToStream(input.prompt)` wraps the prompt (string or `ContentBlockParam[]`) in a single-yield async generator, enabling streaming input mode
 4. `query({ prompt: asyncGenerator, options })` returns a `Query` async iterable from the SDK
-5. If `input.sessionId` is known up front, `runtimeRegistry.start()` is called immediately
-6. On first message containing `session_id`, `runtimeRegistry.ensureStarted()` registers the session
-7. Each message is passed to `normalizeMessage()` and emitted via `onEvent?.()`
-8. After the loop, `runtimeRegistry.finish()` clears the entry; `queryHandle.close()` tears down the SDK handle
-9. Returns `{ sessionId, result, events }`
+5. If `input.sessionId` is known up front, `runtimeRegistry.start()` is called immediately and `onEvent` is subscribed
+6. On first message containing `session_id`, `runtimeRegistry.ensureStarted()` registers the session and subscribes `onEvent`
+7. Each message is passed to `normalizeMessage()` and emitted via `runtimeRegistry.emit()`, which buffers the event and fans it out to all subscribers (including `onEvent`)
+8. After the loop, `execute()` emits a synthetic `session.completed` event via the registry (buffered + delivered to all subscribers)
+9. `runtimeRegistry.finish()` resolves the session's completion promise then clears the entry; `queryHandle.close()` tears down the SDK handle
+10. Returns `{ sessionId, result, events }`
+
+**SSE stream resume:** client disconnect does NOT abort the agent. The route layer uses an `active` flag to guard writes to a closed response; the agent keeps running and its events are buffered. A reconnecting client can attach via `GET /sessions/:sessionId/stream` to replay buffered events and receive live ones.
 
 ### 1b. Inject a message into an active run
 
@@ -72,6 +75,13 @@ src/lib/claude/
 
 **`runtime-registry.ts` singleton** — `runtimeRegistry` is module-level. All callers share the same instance. Do not create additional `RuntimeRegistry` instances.
 
+Each `ActiveRun` now carries:
+- `events: NormalizedEvent[]` — append-only in-memory buffer of every event emitted during the run
+- `subscribers: Set<fn>` — live SSE writers; use `runtimeRegistry.subscribe(sessionId, fn)` (returns unsubscribe)
+- `completionPromise: Promise<void>` — resolves when `finish()` is called; used by `GET /sessions/:sessionId/stream` to await session end
+
+New methods: `emit()`, `subscribe()`, `getBufferedEvents(sessionId, afterIndex?)`, `getCompletionPromise(sessionId)`.
+
 ## Session Store
 
 `session-store.ts` exports `buildSessionStore(cfg: StartupConfig): SessionStore | undefined`. Called once at module load in `session-service.ts`; the result is a module-level singleton.
@@ -96,6 +106,7 @@ src/lib/claude/
 - New message types added to the SDK will fall through to the `message.raw` fallback in `normalizeMessage`. They won't break the server but will appear as raw events in responses.
 - All prompts use **streaming input mode** (`prompt: AsyncIterable<SDKUserMessage>`). The `promptToStream()` helper wraps any `PromptContent` value in a single-yield generator — this is why image content blocks work even on the first message.
 - `streamMessageToSession()` is the only path that uses `Query.streamInput()`. It must only be called while the session's query is still running; the route layer enforces this by checking `runtimeRegistry.get(sessionId)` before calling it.
+- **SSE stream resume:** `execute()` subscribes `onEvent` to the registry, so all events are buffered even when the original SSE client disconnects. Route handlers use an `active` flag (set to `false` on `res.on('close')`) to skip writes to closed responses — they do NOT pass an abort signal on disconnect. The synthetic `session.completed` event is emitted via `runtimeRegistry.emit()` at end-of-run (before `finish()`), so reattached clients receive it too.
 
 ## Tests
 

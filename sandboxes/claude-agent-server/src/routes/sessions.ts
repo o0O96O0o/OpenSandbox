@@ -1,6 +1,5 @@
 import { Router } from 'express'
 
-import { logger } from '../lib/logger.js'
 import {
   abortSession,
   createSessionBodySchema,
@@ -36,7 +35,7 @@ import {
 } from '../lib/claude/handlers/index.js'
 import { runtimeRegistry } from '../lib/claude/adapters/runtime-registry.js'
 import { asyncHandler, HttpError } from '../lib/http/errors.js'
-import { closeSse, openSse, requestAbortSignal, startSseHeartbeat, writeSseError, writeSseEvent } from '../lib/http/sse.js'
+import { closeSse, openSse, startSseHeartbeat, writeSseError, writeSseEvent } from '../lib/http/sse.js'
 
 export const sessionsRouter = Router()
 
@@ -86,21 +85,24 @@ sessionsRouter.post(
     if (input.stream) {
       openSse(res)
       const stopHeartbeat = startSseHeartbeat(res)
+      let active = true
+
+      res.on('close', () => {
+        if (!res.writableEnded) {
+          active = false
+          stopHeartbeat()
+        }
+      })
 
       try {
-        const result = await execute(
-          { ...promptInput(input), signal: requestAbortSignal(req, res) },
-          (event) => writeSseEvent(res, event),
+        await execute(
+          { ...promptInput(input) },
+          (event) => { if (active) writeSseEvent(res, event) },
         )
-
-        stopHeartbeat()
-        const completedData = { sessionId: result.sessionId, subtype: result.result?.subtype ?? null }
-        logger.info(completedData, 'session completed')
-        writeSseEvent(res, { event: 'session.completed', data: completedData })
       } catch (error) {
-        stopHeartbeat()
-        writeSseError(res, error)
+        if (active) writeSseError(res, error)
       } finally {
+        stopHeartbeat()
         closeSse(res)
       }
 
@@ -128,6 +130,52 @@ sessionsRouter.get(
         runtime: session.runtime,
       },
     })
+  }),
+)
+
+sessionsRouter.get(
+  '/sessions/:sessionId/stream',
+  asyncHandler(async (req, res) => {
+    const sessionId = sessionIdParam(req.params.sessionId)
+
+    const rawCursor =
+      typeof req.headers['last-event-id'] === 'string'
+        ? req.headers['last-event-id']
+        : typeof req.query.cursor === 'string'
+          ? req.query.cursor
+          : undefined
+    const cursor = rawCursor !== undefined ? parseInt(rawCursor, 10) : undefined
+
+    if (!runtimeRegistry.get(sessionId)) {
+      throw new HttpError(409, `Session ${sessionId} has no active run to attach to`)
+    }
+
+    const completionPromise = runtimeRegistry.getCompletionPromise(sessionId)!
+
+    openSse(res)
+    const stopHeartbeat = startSseHeartbeat(res)
+    let active = true
+
+    res.on('close', () => {
+      if (!res.writableEnded) {
+        active = false
+        stopHeartbeat()
+      }
+    })
+
+    runtimeRegistry.subscribe(sessionId, (event) => {
+      if (active) writeSseEvent(res, event)
+    })
+
+    const buffered = runtimeRegistry.getBufferedEvents(sessionId, cursor)
+    for (const event of buffered) {
+      if (active) writeSseEvent(res, event)
+    }
+
+    await completionPromise
+
+    stopHeartbeat()
+    closeSse(res)
   }),
 )
 
@@ -174,27 +222,29 @@ sessionsRouter.post(
     if (input.stream) {
       openSse(res)
       const stopHeartbeat = startSseHeartbeat(res)
+      let active = true
+
+      res.on('close', () => {
+        if (!res.writableEnded) {
+          active = false
+          stopHeartbeat()
+        }
+      })
 
       try {
-        const result = await execute(
+        await execute(
           {
             ...promptInput(input, {
               sessionId,
               ...(input.forkSession !== undefined ? { forkSession: input.forkSession } : {}),
             }),
-            signal: requestAbortSignal(req, res),
           },
-          (event) => writeSseEvent(res, event),
+          (event) => { if (active) writeSseEvent(res, event) },
         )
-
-        stopHeartbeat()
-        const completedData = { sessionId: result.sessionId, subtype: result.result?.subtype ?? null }
-        logger.info(completedData, 'session completed')
-        writeSseEvent(res, { event: 'session.completed', data: completedData })
       } catch (error) {
-        stopHeartbeat()
-        writeSseError(res, error)
+        if (active) writeSseError(res, error)
       } finally {
+        stopHeartbeat()
         closeSse(res)
       }
 
